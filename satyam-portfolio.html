@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Yellowstone Inc — Software Development</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0e1a;
+      --surface:   #0f1424;
+      --border:    #1e2a42;
+      --accent:    #00e676;
+      --accent2:   #69f0ae;
+      --text:      #ccffcc;
+      --muted:     #4a9a6a;
+      --mono:      'DM Mono', monospace;
+      --head:      'Syne', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--head);
+      overflow-x: hidden;
+    }
+
+    /* ── CURSOR ── */
+    body { cursor: none; }
+    #cursor {
+      width: 10px; height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%,-50%);
+      transition: transform .15s ease, width .25s ease, height .25s ease, background .25s ease;
+      mix-blend-mode: difference;
+    }
+    #cursor.expand { width: 38px; height: 38px; background: var(--accent2); }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; width: 100%;
+      padding: 24px 60px;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 100;
+      border-bottom: 1px solid transparent;
+      transition: background .4s, border-color .4s;
+    }
+    nav.scrolled { background: rgba(10,14,26,.93); border-color: var(--border); backdrop-filter: blur(14px); }
+    .logo {
+      font-size: 1rem; font-weight: 800; letter-spacing: .06em;
+      color: var(--text); text-decoration: none;
+    }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 40px; list-style: none; }
+    .nav-links a {
+      font-family: var(--mono); font-size: .78rem; color: var(--muted);
+      text-decoration: none; letter-spacing: .08em;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 140vh;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 160px 60px 120px;
+      position: relative; overflow: hidden;
+    }
+
+    /* background image placeholder */
+    .hero-bg-img {
+      position: absolute; inset: 0; z-index: 0;
+      background:
+        linear-gradient(to bottom,
+          rgba(10,14,26,.45) 0%,
+          rgba(10,14,26,.65) 55%,
+          rgba(10,14,26,.97) 100%
+        ),
+        url('https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=1800&q=85') center/cover no-repeat;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .hero-bg-img .img-badge {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--mono); font-size: .72rem; letter-spacing: .2em;
+      color: rgba(255,255,255,.12);
+      border: 1px dashed rgba(255,255,255,.1);
+      padding: 14px 28px; white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* grid lines overlay */
+    #hero .hero-grid {
+      position: absolute; inset: 0; z-index: 1;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 80px 80px;
+      opacity: .18;
+    }
+
+    /* glow blob */
+    #hero .hero-glow {
+      position: absolute; z-index: 1;
+      width: 860px; height: 860px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(200,98,58,.13) 0%, transparent 68%);
+      top: -140px; right: -160px;
+      animation: pulse 7s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+
+    /* all hero text/content above overlays */
+    #hero > *:not(.hero-bg-img):not(.hero-grid):not(.hero-glow) { position: relative; z-index: 2; }
+
+    .hero-tag {
+      font-family: var(--mono); font-size: .78rem; color: var(--accent);
+      letter-spacing: .2em; margin-bottom: 28px;
+      opacity: 0; animation: fadeUp .7s .2s forwards;
+    }
+    .hero-title {
+      font-size: clamp(3.2rem, 9vw, 9rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.03em;
+      max-width: 900px;
+      opacity: 0; animation: fadeUp .8s .4s forwards;
+    }
+    .hero-title .line2 { color: var(--accent); display: block; }
+
+    .hero-tagline {
+      font-family: var(--mono); font-size: 1.05rem; color: var(--muted);
+      margin-top: 32px; max-width: 480px; line-height: 1.7;
+      opacity: 0; animation: fadeUp .8s .6s forwards;
+    }
+
+    .hero-cta {
+      margin-top: 52px; display: flex; gap: 18px; flex-wrap: wrap;
+      opacity: 0; animation: fadeUp .8s .8s forwards;
+    }
+    .btn {
+      padding: 14px 36px; border-radius: 2px;
+      font-family: var(--mono); font-size: .82rem; letter-spacing: .1em;
+      text-decoration: none; transition: all .25s; display: inline-block;
+    }
+    .btn-primary {
+      background: var(--accent); color: #0a0e1a; font-weight: 600;
+      border: 1px solid var(--accent);
+    }
+    .btn-primary:hover { background: transparent; color: var(--accent); }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    .scroll-hint {
+      position: absolute; bottom: 40px; left: 60px;
+      font-family: var(--mono); font-size: .72rem; color: var(--muted);
+      display: flex; align-items: center; gap: 12px;
+      opacity: 0; animation: fadeIn 1s 1.4s forwards;
+    }
+    .scroll-hint::before {
+      content: '';
+      width: 40px; height: 1px; background: var(--muted);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    /* ── SECTION COMMON ── */
+    section { padding: 120px 60px; }
+    .section-label {
+      font-family: var(--mono); font-size: .75rem; letter-spacing: .22em;
+      color: var(--accent); margin-bottom: 14px; display: flex; align-items: center; gap: 14px;
+    }
+    .section-label::after { content:''; flex: 0 0 50px; height: 1px; background: var(--accent); }
+    h2.section-title {
+      font-size: clamp(2rem, 4.5vw, 3.5rem);
+      font-weight: 700; letter-spacing: -.02em;
+      line-height: 1.1; margin-bottom: 60px;
+    }
+
+    /* ── ABOUT ── */
+    #about { background: var(--surface); }
+    .about-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+    }
+    .about-image-wrap {
+      position: relative;
+    }
+    .about-img-placeholder {
+      width: 100%; aspect-ratio: 4/5;
+      background: url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80') center/cover no-repeat;
+      position: relative; overflow: hidden;
+    }
+    .about-img-placeholder::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(200,98,58,.12), rgba(212,165,106,.08));
+    }
+    .about-img-placeholder .initials {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5rem; font-weight: 800; color: var(--border);
+      letter-spacing: -.05em;
+    }
+    /* accent border decoration */
+    .about-image-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      border: 1px solid var(--accent);
+      z-index: -1;
+      clip-path: inset(12px 0 0 12px);
+    }
+
+    .about-text p {
+      font-family: var(--mono); font-size: .9rem; color: var(--muted);
+      line-height: 1.85; margin-bottom: 20px;
+    }
+    .about-text p strong { color: var(--text); font-style: italic; }
+    .skills-list {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px;
+    }
+    .skill-tag {
+      font-family: var(--mono); font-size: .72rem; letter-spacing: .1em;
+      padding: 6px 16px; border: 1px solid var(--border);
+      color: var(--muted); border-radius: 2px;
+      transition: all .2s;
+    }
+    .skill-tag:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── PROJECTS ── */
+    #projects { background: var(--bg); }
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+    .project-card {
+      background: var(--surface);
+      position: relative; overflow: hidden;
+      aspect-ratio: 4/3;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 28px;
+      transition: transform .35s ease;
+    }
+    .project-card:hover { transform: scale(1.02); z-index: 2; }
+
+    /* placeholder image fill */
+    .project-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: var(--border);
+      z-index: 0;
+    }
+    .project-card:nth-child(1)::before { background: url('https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=900&q=80') center/cover no-repeat; }
+    .project-card:nth-child(2)::before { background: url('https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=900&q=80') center/cover no-repeat; }
+    .project-card:nth-child(3)::before { background: url('https://images.unsplash.com/photo-1587620962725-abab19836100?w=900&q=80') center/cover no-repeat; }
+    .project-card:nth-child(4)::before { background: url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&q=80') center/cover no-repeat; }
+    .project-card:nth-child(5)::before { background: url('https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=900&q=80') center/cover no-repeat; }
+
+    /* noise overlay */
+    .project-card::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      z-index: 1;
+    }
+
+    .card-overlay {
+      position: absolute; inset: 0; z-index: 2;
+      background: linear-gradient(to top, rgba(10,14,26,.95) 0%, transparent 55%);
+    }
+    .card-content { position: relative; z-index: 3; }
+    .card-number {
+      font-family: var(--mono); font-size: .68rem; letter-spacing: .2em;
+      color: var(--accent); margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: 1.15rem; font-weight: 700; margin-bottom: 6px;
+    }
+    .card-desc {
+      font-family: var(--mono); font-size: .75rem; color: var(--muted); line-height: 1.6;
+    }
+    .card-tags {
+      margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .card-tag {
+      font-family: var(--mono); font-size: .65rem; letter-spacing: .08em;
+      padding: 3px 10px; border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.4);
+    }
+
+    /* large card spans 2 cols */
+    .project-card.wide { grid-column: span 2; }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+      background: var(--accent);
+      padding: 48px 60px;
+      display: flex; gap: 0;
+    }
+    .stat {
+      flex: 1; text-align: center;
+      border-right: 1px solid rgba(0,0,0,.15);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-number {
+      font-size: 3rem; font-weight: 800; color: #0a0e1a;
+      letter-spacing: -.04em; line-height: 1;
+    }
+    .stat-label {
+      font-family: var(--mono); font-size: .72rem; color: rgba(0,0,0,.65);
+      letter-spacing: .15em; margin-top: 6px;
+    }
+
+    /* ── CONTACT ── */
+    #contact { background: var(--surface); }
+    .contact-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start;
+    }
+    .contact-info p {
+      font-family: var(--mono); font-size: .9rem; color: var(--muted);
+      line-height: 1.8; max-width: 400px; margin-bottom: 40px;
+    }
+    .contact-links { display: flex; flex-direction: column; gap: 14px; }
+    .contact-link {
+      font-family: var(--mono); font-size: .82rem; color: var(--muted);
+      text-decoration: none; display: flex; align-items: center; gap: 12px;
+      transition: color .2s;
+    }
+    .contact-link span { color: var(--accent); font-size: .7rem; letter-spacing: .15em; }
+    .contact-link:hover { color: var(--text); }
+
+    /* form */
+    .contact-form { display: flex; flex-direction: column; gap: 20px; }
+    .form-group { position: relative; }
+    .form-group label {
+      font-family: var(--mono); font-size: .7rem; letter-spacing: .18em;
+      color: var(--muted); display: block; margin-bottom: 8px;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%; background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text); font-family: var(--mono); font-size: .88rem;
+      padding: 14px 18px; outline: none;
+      transition: border-color .2s; resize: none;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+    .form-group textarea { height: 130px; }
+
+    .form-submit {
+      background: var(--accent); color: #0a0e1a;
+      border: none; font-family: var(--head); font-weight: 700;
+      font-size: .82rem; letter-spacing: .15em;
+      padding: 16px 40px; cursor: none;
+      transition: all .25s; align-self: flex-start;
+      position: relative; overflow: hidden;
+    }
+    .form-submit::after {
+      content: '→';
+      position: absolute; right: -24px; top: 50%; transform: translateY(-50%);
+      transition: right .25s;
+    }
+    .form-submit:hover { padding-right: 56px; }
+    .form-submit:hover::after { right: 18px; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 40px 60px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--bg);
+    }
+    footer p { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+    .footer-accent { color: var(--accent); }
+
+    /* ── REVEAL ANIMATION ── */
+    .reveal {
+      opacity: 0; transform: translateY(40px);
+      transition: opacity .7s ease, transform .7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav { padding: 20px 28px; }
+      .nav-links { gap: 24px; }
+      section { padding: 90px 28px; }
+      #hero { padding: 130px 28px 70px; }
+      .about-grid, .contact-inner { grid-template-columns: 1fr; gap: 48px; }
+      .projects-grid { grid-template-columns: 1fr 1fr; }
+      .project-card.wide { grid-column: span 2; }
+      .stats-strip { padding: 36px 28px; }
+      .scroll-hint { left: 28px; }
+    }
+    @media (max-width: 600px) {
+      .nav-links { display: none; }
+      .projects-grid { grid-template-columns: 1fr; }
+      .project-card.wide { grid-column: span 1; }
+      .hero-title { font-size: 3.2rem; }
+      footer { flex-direction: column; gap: 10px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="cursor"></div>
+
+<!-- ── NAV ── -->
+<nav id="navbar">
+  <a href="#" class="logo">YS<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#about">01. About</a></li>
+    <li><a href="#projects">02. Work</a></li>
+    <li><a href="#contact">03. Contact</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <!-- background image placeholder -->
+  <div class="hero-bg-img"></div>
+  <!-- grid + glow overlays -->
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+
+  <p class="hero-tag">// available for freelance &amp; collaboration</p>
+  <h1 class="hero-title">
+    Yellowstone<br>
+    <span class="line2">Inc</span>
+  </h1>
+  <p class="hero-tagline">
+    Software developer crafting precise, scalable digital products —<br>
+    from concept to clean, deployable code.
+  </p>
+  <div class="hero-cta">
+    <a href="#projects" class="btn btn-primary">View My Work</a>
+    <a href="#contact" class="btn btn-ghost">Let's Collaborate</a>
+  </div>
+  <div class="scroll-hint">scroll to explore</div>
+</section>
+
+<!-- ── ABOUT ── -->
+<section id="about">
+  <div class="section-label">01 &nbsp; About</div>
+  <h2 class="section-title reveal">Turning ideas into<br>elegant systems.</h2>
+  <div class="about-grid">
+    <div class="about-image-wrap reveal">
+      <div class="about-img-placeholder">
+        <div class="initials">YS</div>
+      </div>
+    </div>
+    <div class="about-text reveal">
+      <p>
+        Hi — We're <strong>Yellowstone Inc</strong>, a software developer passionate about building
+        products that are both technically sound and a joy to use.
+      </p>
+      <p>
+        I specialise in full-stack web development and software architecture, collaborating closely
+        with product-focused companies to ship software that actually moves the needle. 
+        My approach blends engineering rigour with a sharp eye for product thinking.
+      </p>
+      <p>
+        Currently open to co-building opportunities — whether you need a dedicated developer,
+        a technical co-founder mindset, or someone who can own a product end-to-end.
+      </p>
+      <div class="skills-list">
+        <span class="skill-tag">React</span>
+        <span class="skill-tag">Node.js</span>
+        <span class="skill-tag">TypeScript</span>
+        <span class="skill-tag">Python</span>
+        <span class="skill-tag">PostgreSQL</span>
+        <span class="skill-tag">MongoDB</span>
+        <span class="skill-tag">REST APIs</span>
+        <span class="skill-tag">Docker</span>
+        <span class="skill-tag">AWS</span>
+        <span class="skill-tag">Git</span>
+        <span class="skill-tag">Agile</span>
+        <span class="skill-tag">UI/UX</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS ── -->
+<div class="stats-strip">
+  <div class="stat">
+    <div class="stat-number">30+</div>
+    <div class="stat-label">Projects Shipped</div>
+  </div>
+  <div class="stat">
+    <div class="stat-number">15+</div>
+    <div class="stat-label">Happy Clients</div>
+  </div>
+  <div class="stat">
+    <div class="stat-number">4+</div>
+    <div class="stat-label">Years Experience</div>
+  </div>
+  <div class="stat">
+    <div class="stat-number">100%</div>
+    <div class="stat-label">Remote Ready</div>
+  </div>
+</div>
+
+<!-- ── PROJECTS ── -->
+<section id="projects">
+  <div class="section-label">02 &nbsp; Work</div>
+  <h2 class="section-title reveal">Selected Projects</h2>
+
+  <div class="projects-grid">
+
+    <div class="project-card wide reveal">
+      <div class="card-overlay"></div>
+      <div class="card-content">
+        <div class="card-number">001</div>
+        <div class="card-title">E-Commerce Platform</div>
+        <div class="card-desc">Full-stack marketplace with real-time inventory, payment integration &amp; admin dashboard.</div>
+        <div class="card-tags">
+          <span class="card-tag">React</span>
+          <span class="card-tag">Node.js</span>
+          <span class="card-tag">Stripe</span>
+          <span class="card-tag">PostgreSQL</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card reveal">
+      <div class="card-overlay"></div>
+      <div class="card-content">
+        <div class="card-number">002</div>
+        <div class="card-title">AI-Powered SaaS</div>
+        <div class="card-desc">LLM-integrated productivity tool for teams — built with OpenAI API.</div>
+        <div class="card-tags">
+          <span class="card-tag">Python</span>
+          <span class="card-tag">FastAPI</span>
+          <span class="card-tag">OpenAI</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card reveal">
+      <div class="card-overlay"></div>
+      <div class="card-content">
+        <div class="card-number">003</div>
+        <div class="card-title">Healthcare Portal</div>
+        <div class="card-desc">Appointment booking &amp; patient management system with HIPAA-compliant data handling.</div>
+        <div class="card-tags">
+          <span class="card-tag">Next.js</span>
+          <span class="card-tag">MongoDB</span>
+          <span class="card-tag">Auth0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card reveal">
+      <div class="card-overlay"></div>
+      <div class="card-content">
+        <div class="card-number">004</div>
+        <div class="card-title">Fintech Dashboard</div>
+        <div class="card-desc">Real-time portfolio analytics &amp; transaction monitoring with live charting.</div>
+        <div class="card-tags">
+          <span class="card-tag">TypeScript</span>
+          <span class="card-tag">D3.js</span>
+          <span class="card-tag">AWS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="project-card wide reveal">
+      <div class="card-overlay"></div>
+      <div class="card-content">
+        <div class="card-number">005</div>
+        <div class="card-title">DevOps Automation Suite</div>
+        <div class="card-desc">CI/CD pipeline builder &amp; infrastructure management tool for mid-size engineering teams.</div>
+        <div class="card-tags">
+          <span class="card-tag">Docker</span>
+          <span class="card-tag">Kubernetes</span>
+          <span class="card-tag">GitHub Actions</span>
+          <span class="card-tag">Terraform</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── CONTACT ── -->
+<section id="contact">
+  <div class="section-label">03 &nbsp; Contact</div>
+  <h2 class="section-title reveal">Let's Build<br>Something Together.</h2>
+  <div class="contact-inner">
+    <div class="contact-info reveal">
+      <p>
+        I'm actively collaborating with product-based companies looking for a software partner — whether 
+        that's a feature build, full product development, or a long-term technical co-build arrangement.
+      </p>
+      <div class="contact-links">
+        <a href="mailto:hello@yellowstone.inc" class="contact-link"><span>EMAIL</span> hello@yellowstone.inc</a>
+        <a href="#" class="contact-link"><span>GITHUB</span> github.com/yellowstoneinc</a>
+        <a href="#" class="contact-link"><span>LINKEDIN</span> linkedin.com/in/yellowstoneinc</a>
+        <a href="#" class="contact-link"><span>TWITTER</span> @yellowstoneinc</a>
+      </div>
+    </div>
+    <form class="contact-form reveal" onsubmit="return false;">
+      <div class="form-group">
+        <label>YOUR NAME</label>
+        <input type="text" placeholder="John Doe"/>
+      </div>
+      <div class="form-group">
+        <label>EMAIL ADDRESS</label>
+        <input type="email" placeholder="john@company.com"/>
+      </div>
+      <div class="form-group">
+        <label>PROJECT TYPE</label>
+        <input type="text" placeholder="Web App / SaaS / API / Other"/>
+      </div>
+      <div class="form-group">
+        <label>MESSAGE</label>
+        <textarea placeholder="Tell me about your project, timeline, and goals…"></textarea>
+      </div>
+      <button class="form-submit">SEND MESSAGE</button>
+    </form>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <p>© 2025 <span class="footer-accent">Yellowstone Inc</span>. Crafted with precision.</p>
+  <p style="font-family:var(--mono);font-size:.7rem;color:var(--muted);">
+    Available for collaboration &nbsp;·&nbsp; Based in India
+  </p>
+</footer>
+
+<script>
+  /* Custom cursor */
+  const cur = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cur.style.left = e.clientX + 'px';
+    cur.style.top  = e.clientY + 'px';
+  });
+  document.querySelectorAll('a, button, .project-card, .skill-tag').forEach(el => {
+    el.addEventListener('mouseenter', () => cur.classList.add('expand'));
+    el.addEventListener('mouseleave', () => cur.classList.remove('expand'));
+  });
+
+  /* Navbar scroll */
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  /* Reveal on scroll */
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  /* Form submit flash */
+  document.querySelector('.form-submit').addEventListener('click', function() {
+    const orig = this.textContent;
+    this.textContent = 'MESSAGE SENT ✓';
+    this.style.background = '#7a9a5a';
+    setTimeout(() => {
+      this.textContent = orig;
+      this.style.background = '';
+    }, 3000);
+  });
+</script>
+</body>
+</html>
